@@ -1,5 +1,5 @@
 {
-	"name": "sonic-pi-extension",
+	"name": "vscode-sonic-pi",
 	"displayName": "Sonic Pi Extension",
 	"publisher": "s00500",
 	"description": "Language support and code running for Sonic Pi scripts",
@@ -210,6 +210,10 @@
 					"type": "string",
 					"description": "Set Sonic Pi installation directory.\nOnly use this if the default does not work for you."
 				},
+        "vscode-sonic-pi.serverHostIp": {
+          "type": "string",
+          "description": "Set IP address of the Sonic Pi server.\nUse only if the Sonic Pi server is running in a separate networked/virtual machine with its own IP."
+        },
 				"vscode-sonic-pi.launchSonicPiServerAutomatically": {
 					"type": "string",
 					"enum": [
