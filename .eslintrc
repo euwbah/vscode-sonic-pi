@@ -28,7 +28,12 @@
 				"checksVoidReturn": false
 			}
 		],
-		"prettier/prettier": "error"
+		"prettier/prettier": [
+			"error",
+			{
+				"endOfLine": "auto"
+			}
+		]
 	},
 	"env": {
 		"jest": true,
