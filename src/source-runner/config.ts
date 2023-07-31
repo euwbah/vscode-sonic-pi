@@ -42,6 +42,9 @@ export class Config {
 	public sonicPiRootDirectory(): string {
 		return this.getConfiguration(this.section).sonicPiRootDirectory
 	}
+	public serverHostIp(): string {
+		return this.getConfiguration(this.section).serverHostIp
+	}
 	public launchSonicPiServerCustomExtension(): string {
 		return this.getConfiguration(this.section).launchSonicPiServerCustomExtension
 	}

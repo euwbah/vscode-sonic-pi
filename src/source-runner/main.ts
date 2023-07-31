@@ -51,6 +51,7 @@ export class Main {
 	onRunStarted = new vscode.EventEmitter<number>()
 	onRunEnded = new vscode.EventEmitter<number>()
 
+	serverHostIp: string
 	guiSendToServerPort: number
 	daemonPort: number
 	guiListenToServerPort: number
@@ -128,6 +129,11 @@ export class Main {
 		this.processLogPath = this.logPath + '/processes.log'
 		this.scsynthLogPath = this.logPath + '/scsynth.log'
 
+		this.serverHostIp = '127.0.0.1' // sonic pi server should be localhost by default.
+		if (this.config.serverHostIp()) {
+			this.serverHostIp = this.config.serverHostIp()
+		}
+
 		this.daemonPort = -1
 		this.guiSendToServerPort = -1
 		this.guiListenToServerPort = -1
@@ -147,8 +153,8 @@ export class Main {
 			fs.mkdirSync(this.logPath, { recursive: true })
 		}
 
-		this.cuesOutput = vscode.window.createOutputChannel('Cues')
-		this.logOutput = vscode.window.createOutputChannel('Log')
+		this.cuesOutput = vscode.window.createOutputChannel('Cues (Sonic Pi)')
+		this.logOutput = vscode.window.createOutputChannel('Log (Sonic Pi)')
 		this.cuesOutput.show()
 		this.logOutput.show()
 
@@ -460,12 +466,12 @@ export class Main {
 		// this.oscMidiInPort = port_map.get('osc-midi-in')!
 		// this.websocketPort = port_map.get('websocket')!
 
-		this.portsInitalizedResolver(new OscSender(this.serverListenToGuiPort))
+		this.portsInitalizedResolver(new OscSender(this.serverListenToGuiPort, this.serverHostIp))
 		return true
 	}
 
 	startKeepAlive() {
-		const daemonSender = new OscSender(this.daemonPort)
+		const daemonSender = new OscSender(this.daemonPort, this.serverHostIp)
 		console.log('Sending Keepalive to', this.daemonPort)
 		setInterval(() => {
 			let message = new OSC.Message('/daemon/keep-alive', parseInt(this.guiUuid))
@@ -491,7 +497,7 @@ export class Main {
 				this.guiListenToServerPort = parseInt(ports[1])
 				this.serverSendToGuiPort = parseInt(ports[2])
 				this.guiUuid = parseInt(ports[7])
-				this.portsInitalizedResolver(new OscSender(this.serverSendToGuiPort))
+				this.portsInitalizedResolver(new OscSender(this.serverSendToGuiPort, this.serverHostIp))
 
 				resolve() // Assume stuff is ok instantly....
 
