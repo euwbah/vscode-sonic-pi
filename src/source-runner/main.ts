@@ -22,16 +22,16 @@
 
 import * as vscode from 'vscode'
 import { TextDecoder } from 'util'
-const fs = require('fs')
-const os = require('os')
-const child_process = require('child_process')
+import fs = require('fs')
+import os = require('os')
+import child_process = require('child_process')
 import { OscSender } from './oscsender'
-const OSC = require('osc-js')
-const utf8 = require('utf8')
-const { v4: uuidv4 } = require('uuid')
+import OSC from 'osc-js'
+import utf8 = require('utf8')
+import { v4 as uuidv4 } from 'uuid'
 import { Config } from './config'
 import { Range, TextEditor, window } from 'vscode'
-const readline = require('readline')
+import readline = require('readline')
 
 export class Main {
 	rootPath: string
@@ -103,9 +103,7 @@ export class Main {
 		this.config = new Config()
 
 		// Override default root path if found in settings
-		if (this.config.sonicPiRootDirectory()) {
-			this.rootPath = this.config.sonicPiRootDirectory()
-		}
+		this.rootPath = this.config.sonicPiRootDirectory() ?? this.rootPath
 
 		this.portsInitalized = new Promise((r) => (this.portsInitalizedResolver = r))
 
@@ -117,7 +115,7 @@ export class Main {
 		this.extDebugOutput.appendLine('Using ruby: ' + this.rubyPath)
 
 		if (this.config.daemonLauncherPath()) {
-			let relPath = this.config.daemonLauncherPath()
+			let relPath = this.config.daemonLauncherPath()!
 			if (!relPath.startsWith('/')) relPath = '/' + relPath
 			this.daemonLauncherPath = this.rootPath + relPath
 		} else if (this.platform === 'win32') {
@@ -128,7 +126,7 @@ export class Main {
 
 		this.extDebugOutput.appendLine('Using daemon launcher: ' + this.daemonLauncherPath)
 
-		this.spUserPath = this.sonicPiHomePath() + '/.sonic-pi'
+		this.spUserPath = this.config.sonicPiUserPath() ?? os.homedir() + '/.sonic-pi'
 		this.daemonLogPath = this.spUserPath + '/log/daemon.log'
 
 		this.samplePath = this.rootPath + '/etc/samples'
@@ -143,10 +141,7 @@ export class Main {
 		this.processLogPath = this.logPath + '/processes.log'
 		this.scsynthLogPath = this.logPath + '/scsynth.log'
 
-		this.serverHostIp = '127.0.0.1' // sonic pi server should be localhost by default.
-		if (this.config.serverHostIp()) {
-			this.serverHostIp = this.config.serverHostIp()
-		}
+		this.serverHostIp = this.config.serverHostIp() ?? '127.0.0.1'
 
 		this.extDebugOutput.appendLine(`Using server host ip: ${this.serverHostIp}`)
 
@@ -183,7 +178,7 @@ export class Main {
 					editors[i].document.languageId === 'sonic-pi' &&
 					!this.serverStarted
 				) {
-					this.startServer()
+					void this.startServer()
 					break
 				}
 				if (launchAuto === 'custom') {
@@ -206,7 +201,7 @@ export class Main {
 						editors[i].document.fileName.endsWith(customExtension) &&
 						!this.serverStarted
 					) {
-						this.startServer()
+						void this.startServer()
 						break
 					}
 				}
@@ -234,10 +229,6 @@ export class Main {
 					}
 				})
 		}
-	}
-
-	sonicPiHomePath() {
-		return os.homedir()
 	}
 
 	async startServer() {
@@ -268,7 +259,12 @@ export class Main {
 	// We are processing most of the incoming OSC messages, but not everything yet.
 	setupOscReceiver() {
 		let osc = new OSC({
-			plugin: new OSC.DatagramPlugin({ open: { port: this.guiListenToServerPort, host: '127.0.0.1' } }),
+			plugin: new OSC.DatagramPlugin({
+				open: {
+					port: this.guiListenToServerPort,
+					host: '127.0.0.1',
+				},
+			} as any),
 		})
 		osc.open()
 
@@ -490,7 +486,7 @@ export class Main {
 
 	// This is the main part of launching Sonic Pi's backend
 	async startRubyServer(): Promise<void> {
-		let args: String[] = [this.daemonLauncherPath] // No need for launch args on the new daemon script
+		let args: ReadonlyArray<string> = [this.daemonLauncherPath] // No need for launch args on the new daemon script
 
 		return new Promise<void>((resolve, reject) => {
 			let ruby_server = child_process.spawn(this.rubyPath, args)
@@ -517,7 +513,14 @@ export class Main {
 
 			ruby_server.stderr.on('data', (data: any) => {
 				// console.log(`stdserr: ${data}`)
-				this.logOutput.appendLine(`Daemon Err: ${data}`)
+				this.logOutput.appendLine(`Error in daemon.rb: ${data}`)
+				void vscode.window
+					.showErrorMessage(`Error occured in Sonic Pi server's main daemon!`, 'Show Log')
+					.then((choice) => {
+						if (choice === 'Show Log') {
+							this.logOutput.show()
+						}
+					})
 			})
 		})
 	}
