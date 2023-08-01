@@ -66,12 +66,13 @@ export class Main {
 
 	logOutput: vscode.OutputChannel
 	cuesOutput: vscode.OutputChannel
+	extDebugOutput: vscode.OutputChannel
 
 	serverStarted: boolean
 
 	platform: string
 	guiUuid: any
-	config: any
+	config: Config
 
 	runOffset: number
 
@@ -80,6 +81,13 @@ export class Main {
 	})
 
 	constructor() {
+		this.cuesOutput = vscode.window.createOutputChannel('Sonic Pi: Cues')
+		this.logOutput = vscode.window.createOutputChannel('Sonic Pi: Log')
+		this.extDebugOutput = vscode.window.createOutputChannel('Sonic Pi: Extension')
+		this.cuesOutput.show()
+		this.logOutput.show()
+		this.extDebugOutput.show()
+
 		// Set up path defaults based on platform
 		this.platform = os.platform()
 		if (this.platform === 'win32') {
@@ -105,14 +113,20 @@ export class Main {
 			this.rubyPath = this.config.commandPath()
 		}
 
-		console.log('Using Sonic Pi root directory: ' + this.rootPath)
-		console.log('Using ruby: ' + this.rubyPath)
+		this.extDebugOutput.appendLine('Using Sonic Pi root directory: ' + this.rootPath)
+		this.extDebugOutput.appendLine('Using ruby: ' + this.rubyPath)
 
-		this.daemonLauncherPath = this.rootPath + '/server/ruby/bin/daemon.rb'
-
-		if (this.platform === 'win32') {
+		if (this.config.daemonLauncherPath()) {
+			let relPath = this.config.daemonLauncherPath()
+			if (!relPath.startsWith('/')) relPath = '/' + relPath
+			this.daemonLauncherPath = this.rootPath + relPath
+		} else if (this.platform === 'win32') {
 			this.daemonLauncherPath = this.rootPath + '/app/server/ruby/bin/daemon.rb'
+		} else {
+			this.daemonLauncherPath = this.rootPath + '/server/ruby/bin/daemon.rb'
 		}
+
+		this.extDebugOutput.appendLine('Using daemon launcher: ' + this.daemonLauncherPath)
 
 		this.spUserPath = this.sonicPiHomePath() + '/.sonic-pi'
 		this.daemonLogPath = this.spUserPath + '/log/daemon.log'
@@ -134,6 +148,8 @@ export class Main {
 			this.serverHostIp = this.config.serverHostIp()
 		}
 
+		this.extDebugOutput.appendLine(`Using server host ip: ${this.serverHostIp}`)
+
 		this.daemonPort = -1
 		this.guiSendToServerPort = -1
 		this.guiListenToServerPort = -1
@@ -153,14 +169,7 @@ export class Main {
 			fs.mkdirSync(this.logPath, { recursive: true })
 		}
 
-		this.cuesOutput = vscode.window.createOutputChannel('Cues (Sonic Pi)')
-		this.logOutput = vscode.window.createOutputChannel('Log (Sonic Pi)')
-		this.cuesOutput.show()
-		this.logOutput.show()
-
 		this.serverStarted = false
-
-		// this.oscSender = new OscSender()
 
 		// create an uuid for the editor
 		this.guiUuid = -1

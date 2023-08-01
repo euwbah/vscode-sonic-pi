@@ -211,8 +211,13 @@
 					"description": "Set Sonic Pi installation directory.\nOnly use this if the default does not work for you."
 				},
         "vscode-sonic-pi.serverHostIp": {
+          "title": "Server Host IP",
           "type": "string",
-          "description": "Set IP address of the Sonic Pi server.\nUse only if the Sonic Pi server is running in a separate networked/virtual machine with its own IP."
+          "description": "Set IP address of the Sonic Pi server.\nUse when Sonic Pi server is running in a separate networked/virtual machine with its own IP."
+        },
+        "vscode-sonic-pi.daemonLauncherPath": {
+          "type": "string",
+          "description": "Override default path to daemon.rb, relative to Sonic Pi root directory.\nOn windows, this defaults to '/app/server/ruby/bin/daemon.rb'. On Mac/Unix, /server/ruby/bin/daemon.rb.\nUse when Sonic Pi server is running in a virtual/networked machine with its own IP."
         },
 				"vscode-sonic-pi.launchSonicPiServerAutomatically": {
 					"type": "string",

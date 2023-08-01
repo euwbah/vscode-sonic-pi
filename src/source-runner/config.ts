@@ -42,6 +42,9 @@ export class Config {
 	public sonicPiRootDirectory(): string {
 		return this.getConfiguration(this.section).sonicPiRootDirectory
 	}
+	public daemonLauncherPath(): string {
+		return this.getConfiguration(this.section).daemonLauncherPath
+	}
 	public serverHostIp(): string {
 		return this.getConfiguration(this.section).serverHostIp
 	}
