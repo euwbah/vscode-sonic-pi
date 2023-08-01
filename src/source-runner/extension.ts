@@ -66,7 +66,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let config = new Config()
 	if (config.launchSonicPiServerAutomatically() === 'start') {
-		main.startServer()
+		void main.startServer()
 	}
 
 	let isRecording = false
@@ -74,7 +74,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// Register the editor commands. For now, run, stop and recording. Those should be enough for
 	// some initial fun...
 	let disposable = vscode.commands.registerCommand('vscode-sonic-pi.startserver', () => {
-		main.startServer()
+		void main.startServer()
 	})
 
 	disposable = vscode.commands.registerTextEditorCommand('vscode-sonic-pi.run', (textEditor) => {
