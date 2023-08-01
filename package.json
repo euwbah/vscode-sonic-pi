@@ -13,21 +13,12 @@
 	},
 	"icon": "img/icon.png",
 	"engines": {
-		"vscode": "^1.58.0"
+		"vscode": "^1.75.0"
 	},
 	"categories": [
 		"Programming Languages"
 	],
 	"activationEvents": [
-		"onLanguage:sonic-pi",
-		"onCommand:vscode-sonic-pi.openExamples",
-		"onCommand:vscode-sonic-pi.openTutorial",
-		"onCommand:vscode-sonic-pi.startserver",
-		"onCommand:vscode-sonic-pi.run",
-		"onCommand:vscode-sonic-pi.checkInstall",
-		"onCommand:vscode-sonic-pi.runCell",
-		"onCommand:vscode-sonic-pi.runselected",
-		"onCommand:vscode-sonic-pi.newNotebook",
 		"onNotebook:sonic-pi-book"
 	],
 	"main": "./out/extension.js",
