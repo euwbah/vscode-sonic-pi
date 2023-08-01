@@ -27,6 +27,15 @@ export class Config {
 	private rubySection: string = 'ruby.interpreter'
 
 	// sonic-pi's config
+
+	/**
+	 * @returns overriden default path to the Sonic Pi installation.
+	 * @description This should default to the OS's default installation location of Sonic Pi if not set.
+	 */
+	public sonicPiRootDirectory(): string | null {
+		return this.getConfiguration(this.section).sonicPiRootDirectory
+	}
+
 	public flashBackgroundColor(): string {
 		return this.getConfiguration(this.section).flashBackgroundColor
 	}
@@ -38,15 +47,6 @@ export class Config {
 	}
 	public runFileWhenRunSelectedIsEmpty(): string {
 		return this.getConfiguration(this.section).runFileWhenRunSelectedIsEmpty
-	}
-	public sonicPiRootDirectory(): string {
-		return this.getConfiguration(this.section).sonicPiRootDirectory
-	}
-	public daemonLauncherPath(): string {
-		return this.getConfiguration(this.section).daemonLauncherPath
-	}
-	public serverHostIp(): string {
-		return this.getConfiguration(this.section).serverHostIp
 	}
 	public launchSonicPiServerCustomExtension(): string {
 		return this.getConfiguration(this.section).launchSonicPiServerCustomExtension
@@ -67,7 +67,40 @@ export class Config {
 		void this.getConfiguration(this.section).update('runFileWhenRunSelectedIsEmpty', value, true)
 	}
 
-	// ruby interpreter's config
+	/*
+		The following configs are useful when running Sonic Pi server on a separate networked/virtual machine.
+		_____________________________________________________________________________________________________
+	*/
+
+	/**
+	 * @returns overriden default path to the Sonic Pi's daemon.rb entry point.
+	 * @description This should default to the OS's default installation of /server/ruby/bin/daemon.rb
+	 * 				if not set.
+	 */
+	public daemonLauncherPath(): string | null {
+		return this.getConfiguration(this.section).remote.daemonLauncherPath
+	}
+	/**
+	 * @returns overriden path to the ~/.sonic-pi directory stored in userhome which should contain user data.
+	 * @description This is the directory where logs can be found to read port numbers, etc.
+	 * 				This should default to ~/.sonic-pi otherwise (where ~/ is `os.homedir()`)
+	 */
+	public sonicPiUserPath(): string | null {
+		return this.getConfiguration(this.section).remote.sonicPiUserPath
+	}
+	/**
+	 * @returns overriden ip address of the Sonic Pi server.
+	 * @description This should default to 127.0.0.1 if not set.
+	 */
+	public serverHostIp(): string | null {
+		return this.getConfiguration(this.section).remote.serverHostIp
+	}
+
+	/*
+		The following configs are pertaining to ruby interpreter settings (ruby extension)
+		_________________________________________________________________________________
+	*/
+
 	public commandPath(): string {
 		return this.getConfiguration(this.rubySection).commandPath
 	}
