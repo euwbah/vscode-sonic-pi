@@ -258,6 +258,8 @@ export class Main {
 	// This is where the incoming OSC messages are processed.
 	// We are processing most of the incoming OSC messages, but not everything yet.
 	setupOscReceiver() {
+		// TODO: Double check when Sonic Pi server sends out UDP OSC messages to localhost from Windows,
+		//		 WSL2 can receive it via WSL2's localhost. If not, we need to add a new config here.
 		let osc = new OSC({
 			plugin: new OSC.DatagramPlugin({
 				open: {
