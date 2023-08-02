@@ -100,6 +100,11 @@
 				"title": "Start Server",
 				"category": "Sonic Pi"
 			},
+      {
+        "command": "vscode-sonic-pi.stopServer",
+        "title": "Stop Server",
+        "category": "Sonic Pi"
+      },
 			{
 				"command": "vscode-sonic-pi.checkInstall",
 				"title": "Check Install",
@@ -268,7 +273,7 @@
         "vscode-sonic-pi.remote.daemonLauncherPath": {
           "title": "Remote path to `daemon.rb`",
           "type": "string",
-          "description": "Override default path to daemon.rb, **relative to Sonic Pi installation directory**.\nOn windows, this defaults to '/app/server/ruby/bin/daemon.rb'. On Mac/Unix, /server/ruby/bin/daemon.rb.\nUse when Sonic Pi server is running an OS different from the current one."
+          "description": "Override default path to daemon.rb.\nOn windows, this defaults to 'app/server/ruby/bin/daemon.rb'. On Mac/Unix, `server/ruby/bin/daemon.rb`.\nUse when Sonic Pi server is running an OS different from the current one."
         },
         "vscode-sonic-pi.remote.rubyPath": {
           "title": "Remote path to ruby interpreter executable",

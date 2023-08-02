@@ -34,24 +34,12 @@ import readline = require('readline')
 
 // disgusting hack because osc-js.d.ts is broken (the typings are for ES6 import style when it's actually CommonJS)
 import { default as _osc_type } from 'osc-js'
+import { Paths } from './paths'
 let OSC = _osc_type
 OSC = require('osc-js')
 
 export class Main {
-	rootPath: string
-	rubyPath: string
-	daemonLauncherPath: string
-	daemonLogPath: string
-	samplePath: string
-	spUserPath: string
-	spUserTmpPath: string
-	logPath: string
-	serverErrorLogPath: string
-	serverOutputLogPath: string
-	guiLogPath: string
-	processLogPath: string
-	scsynthLogPath: string
-
+	paths: Paths
 	onRunStarted = new vscode.EventEmitter<number>()
 	onRunEnded = new vscode.EventEmitter<number>()
 
@@ -76,7 +64,10 @@ export class Main {
 	serverStarted: boolean
 
 	platform: string
-	guiUuid: any
+	/**
+	 * Stores a GUI 'auth' token Sonic Pi which needs to be sent with every message
+	 */
+	guiUuid: number
 	config: Config
 
 	runOffset: number
@@ -93,64 +84,13 @@ export class Main {
 		this.logOutput.show()
 		this.extDebugOutput.show()
 
-		// Set up path defaults based on platform
-		this.platform = os.platform()
-		if (this.platform === 'win32') {
-			this.rootPath = 'C:/Program Files/Sonic Pi'
-			this.rubyPath = this.rootPath + '/app/server/native/ruby/bin/ruby.exe'
-		} else if (this.platform === 'darwin') {
-			this.rootPath = '/Applications/Sonic Pi.app/Contents/Resources'
-			this.rubyPath = '/usr/bin/ruby' // was this.rootPath + '/app/server/native/ruby/bin/ruby'
-		} else {
-			this.rootPath = '/home/user/sonic-pi'
-			this.rubyPath = 'ruby'
-		}
 		this.config = new Config()
-
-		// Override default root path if found in settings
-		this.rootPath = this.config.sonicPiRootDirectory() || this.rootPath
-
-		this.portsInitalized = new Promise((r) => (this.portsInitalizedResolver = r))
-
-		this.rubyPath = this.config.rubyPath() || this.config.commandPath() || this.rubyPath
-
-		this.debugLog('Using Sonic Pi root directory: ' + this.rootPath)
-		this.debugLog('Using ruby: ' + this.rubyPath)
-
-		{
-			let relPath = this.config.daemonLauncherPath()
-			if (relPath) {
-				if (!relPath.startsWith('/')) relPath = '/' + relPath
-				this.daemonLauncherPath = this.rootPath + relPath
-			} else if (this.platform === 'win32') {
-				this.daemonLauncherPath = this.rootPath + '/app/server/ruby/bin/daemon.rb'
-			} else {
-				this.daemonLauncherPath = this.rootPath + '/server/ruby/bin/daemon.rb'
-			}
-		}
-		this.debugLog('Using daemon launcher: ' + this.daemonLauncherPath)
-
-		this.spUserPath = this.config.sonicPiUserPath() || os.homedir() + '/.sonic-pi'
-		this.daemonLogPath = this.spUserPath + '/log/daemon.log'
-
-		this.debugLog('Using user path: ' + this.spUserPath)
-		this.debugLog('Using daemon log path: ' + this.daemonLogPath)
-
-		this.samplePath = this.rootPath + '/etc/samples'
-		this.spUserTmpPath = this.spUserPath + '/.writableTesterPath'
-		this.logPath = this.spUserPath + '/log'
-
-		this.serverErrorLogPath = this.logPath + '/server-errors.log'
-		this.serverOutputLogPath = this.logPath + '/server-output.log'
-
-		this.guiLogPath = this.logPath + '/gui.log'
-
-		this.processLogPath = this.logPath + '/processes.log'
-		this.scsynthLogPath = this.logPath + '/scsynth.log'
+		this.platform = os.platform()
 
 		this.serverHostIp = this.config.serverHostIp()
+		this.debugLog('Using Sonic Pi server IP: ' + this.serverHostIp)
 
-		this.debugLog(`Using server host ip: ${this.serverHostIp}`)
+		this.paths = new Paths(this)
 
 		this.sonicPiDaemonProcess = null
 
@@ -168,15 +108,12 @@ export class Main {
 
 		this.runOffset = 0
 
-		// attempt to create log directory
-		if (!fs.existsSync(this.logPath)) {
-			fs.mkdirSync(this.logPath, { recursive: true })
-		}
-
 		this.serverStarted = false
 
 		// create an uuid for the editor
 		this.guiUuid = -1
+
+		this.portsInitalized = new Promise((r) => (this.portsInitalizedResolver = r))
 
 		// watch to see if the user opens a ruby or custom file and we need to start the server
 		vscode.window.onDidChangeVisibleTextEditors((editors) => {
@@ -226,7 +163,7 @@ export class Main {
 	}
 
 	checkSonicPiPath() {
-		if (!fs.existsSync(this.daemonLauncherPath)) {
+		if (!fs.existsSync(this.paths.daemonLauncher)) {
 			void vscode.window
 				.showErrorMessage('The Sonic Pi root path is not properly configured.', 'Go to settings')
 				.then((item) => {
@@ -237,7 +174,9 @@ export class Main {
 						)
 					}
 				})
+			return false
 		}
+		return true
 	}
 
 	async startServer() {
@@ -250,12 +189,18 @@ export class Main {
 		this.debugLog('Going to start server (daemon.rb)')
 		this.logOutput.appendLine('Going to start server')
 
+		this.paths = new Paths(this) // loads the latest paths from config
+
 		await this.startRubyServer() // Start server using daemon script... takes port from here
-		this.logOutput.append('Started server!')
-		this.extDebugOutput.append('Started server!')
+		this.log('Started server!')
+		this.debugLog('Started server!')
 		await this.initAndCheckPorts() // Takes ports from log here also
 		this.startKeepAlive()
 		this.setupOscReceiver()
+		setTimeout(() => {
+			// FIXME: For some weird reason, the mixer amp is very high upon startup. Manually set it to 1.
+			this.runCode('set_mixer_control! amp: 1')
+		}, 6000)
 	}
 
 	log(str: string) {
@@ -434,14 +379,14 @@ export class Main {
 		// Clear out old tasks from previous sessions if they still exist
 		// in addtition to clearing out the logs
 		// this.log('[GUI] - Cleaning old sessions...')
-		// child_process.spawnSync(this.rubyPath, [this.initScriptPath])
+		// child_process.spawnSync(this.paths.ruby, [this.paths.initScript])
 
 		// Discover the port numbers
 		let port_map = new Map<string, number>()
 		this.debugLog('[GUI] - Discovering port numbers...')
 
 		// Read log file
-		const inputStream = fs.createReadStream(this.daemonLogPath)
+		const inputStream = fs.createReadStream(this.paths.daemonLog)
 		let lineReader = readline.createInterface({
 			input: inputStream,
 			terminal: false,
@@ -463,6 +408,7 @@ export class Main {
 					let tokens = port_string.split('=>')
 					let key = tokens[0].replace('"', '').replace('"', '')
 					port_map.set(key, parseInt(tokens[1]))
+					this.debugLog('[GUI] - Found port ' + key + ' = ' + tokens[1])
 				})
 			}
 		}
@@ -494,22 +440,41 @@ export class Main {
 
 	startKeepAlive() {
 		const daemonSender = new OscSender(this.daemonPort, this.serverHostIp)
-		console.log('Sending Keepalive to', this.daemonPort)
-		setInterval(() => {
-			let message = new OSC.Message('/daemon/keep-alive', parseInt(this.guiUuid))
+		console.log(`VSCode Sonic Pi: started sending keepalive to ${this.serverHostIp}:${this.daemonPort}`)
+		let keepAliveInterval = setInterval(() => {
+			if (!this.sonicPiDaemonProcess || this.sonicPiDaemonProcess.killed) {
+				console.log(`VSCode Sonic Pi: daemon process is dead, stopping keepalive`)
+				clearInterval(keepAliveInterval)
+				return
+			}
+			let message = new OSC.Message('/daemon/keep-alive', this.guiUuid)
 			daemonSender.send(message)
 		}, 1000)
 	}
 
 	// This is the main part of launching Sonic Pi's backend
 	async startRubyServer(): Promise<void> {
-		let args: ReadonlyArray<string> = ['--verbose', `"${this.daemonLauncherPath}`] // No need for launch args on the new daemon script
+		let args: ReadonlyArray<string> = [
+			// '--verbose',
+			`"${this.paths.daemonLauncher}"`,
+		]
+
 		let options: child_process.SpawnOptions = {
 			shell: true,
+			cwd: this.paths.sonicPiInstallation,
+		}
+
+		if (os.platform() !== 'win32' && os.platform() !== 'darwin') {
+			let uInfo = os.userInfo()
+			options.uid = uInfo.uid
+			options.gid = uInfo.gid
+			this.debugLog(
+				`Going to start daemon.rb as user ${uInfo.username} (${uInfo.uid}) and group ${uInfo.gid}`,
+			)
 		}
 
 		return new Promise<void>((resolve, reject) => {
-			this.sonicPiDaemonProcess = child_process.spawn(`${this.rubyPath}`, args, options)
+			this.sonicPiDaemonProcess = child_process.spawn(`"${this.paths.ruby}"`, args, options)
 
 			this.sonicPiDaemonProcess.on('close', (code) => {
 				this.debugLog(`child_process daemon.rb exited with code ${code}`)
@@ -525,26 +490,25 @@ export class Main {
 				// Start the keepalive loop
 				let ports = data.toString().split(' ')
 
-				// Order: daemon-keep-alive gui-listen-to-server gui-send-to-server scsynth osc-cues tau-api tau-phx token
+				if (ports.length == 8) {
+					// Order: daemon-keep-alive gui-listen-to-server gui-send-to-server scsynth osc-cues tau-api tau-phx token
 
-				this.daemonPort = parseInt(ports[0])
-				this.guiListenToServerPort = parseInt(ports[1])
-				this.serverSendToGuiPort = parseInt(ports[2])
-				this.guiUuid = parseInt(ports[7])
-				this.portsInitalizedResolver(new OscSender(this.serverSendToGuiPort, this.serverHostIp))
+					this.daemonPort = parseInt(ports[0])
+					this.guiListenToServerPort = parseInt(ports[1])
+					this.serverSendToGuiPort = parseInt(ports[2])
+					this.guiUuid = parseInt(ports[7])
+					this.portsInitalizedResolver(new OscSender(this.serverSendToGuiPort, this.serverHostIp))
 
-				this.debugLog(`Using OSC/UDP ports:`)
-				this.debugLog(`  daemon: ${this.daemonPort}`)
-				this.debugLog(`  gui-listen-to-server: ${this.guiListenToServerPort}`)
-				this.debugLog(`  gui-send-to-server: ${this.serverSendToGuiPort}`)
-				this.debugLog(`  guiUuid: ${this.guiUuid}`)
+					this.debugLog(`Using OSC/UDP ports:`)
+					this.debugLog(`  daemon: ${this.daemonPort}`)
+					this.debugLog(`  gui-listen-to-server: ${this.guiListenToServerPort}`)
+					this.debugLog(`  gui-send-to-server: ${this.serverSendToGuiPort}`)
+					this.debugLog(`  guiUuid: ${this.guiUuid}`)
 
-				resolve() // Assume stuff is ok instantly....
+					this.updateMixerSettings()
 
-				// if (data.toString().match(/.*Sonic Pi Server successfully booted.*/)) {
-				// TODO: Fix mixer setting stuff
-				// this.updateMixerSettings()
-				// }
+					resolve() // Assume stuff is ok instantly....
+				}
 			})
 
 			this.sonicPiDaemonProcess.stderr!.on('data', (data: any) => {
@@ -566,8 +530,11 @@ export class Main {
 
 	stopRubyServer() {
 		if (this.sonicPiDaemonProcess && !this.sonicPiDaemonProcess.killed) {
-			this.sonicPiDaemonProcess.kill()
+			this.sonicPiDaemonProcess.kill('SIGINT')
 			this.serverStarted = false
+			void vscode.window.showInformationMessage('Stopped Sonic Pi server.')
+		} else {
+			void vscode.window.showWarningMessage('Sonic Pi server is already stopped.')
 		}
 	}
 
@@ -606,7 +573,7 @@ export class Main {
 		}
 		code = utf8.encode(code)
 		this.clearErrorHighlight()
-		let message = new OSC.Message('/run-code', parseInt(this.guiUuid), code)
+		let message = new OSC.Message('/run-code', this.guiUuid, code)
 		this.sendOsc(message)
 	}
 
