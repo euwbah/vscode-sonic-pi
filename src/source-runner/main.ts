@@ -72,6 +72,7 @@ export class Main {
 	cuesOutput: vscode.OutputChannel
 	extDebugOutput: vscode.OutputChannel
 
+	sonicPiDaemonProcess: child_process.ChildProcess | null
 	serverStarted: boolean
 
 	platform: string
@@ -216,7 +217,7 @@ export class Main {
 
 		// Update the mixer on the server if there are configuration changes
 		vscode.workspace.onDidChangeConfiguration((event) => {
-			if (event.affectsConfiguration('sonicpieditor')) {
+			if (event.affectsConfiguration(Config.section)) {
 				this.updateMixerSettings()
 			}
 		})
@@ -496,11 +497,26 @@ export class Main {
 
 	// This is the main part of launching Sonic Pi's backend
 	async startRubyServer(): Promise<void> {
-		let args: ReadonlyArray<string> = [this.daemonLauncherPath] // No need for launch args on the new daemon script
+		let args: ReadonlyArray<string> = ['--verbose', this.daemonLauncherPath] // No need for launch args on the new daemon script
+		let options: child_process.SpawnOptions = {
+			shell: true,
+		}
 
 		return new Promise<void>((resolve, reject) => {
-			let ruby_server = child_process.spawn(this.rubyPath, args)
-			ruby_server.stdout.on('data', (data: any) => {
+			let shellSafeRubyPath = this.rubyPath.trim().replace('~', '$HOME')
+			shellSafeRubyPath = `"${shellSafeRubyPath}"`
+
+			let ruby_server = child_process.spawn(shellSafeRubyPath, args, options)
+
+			ruby_server.on('close', (code) => {
+				this.extDebugOutput.appendLine(`child_process daemon.rb exited with code ${code}`)
+			})
+
+			ruby_server.on('error', (err) => {
+				this.extDebugOutput.appendLine(`child_process daemon.rb couldn't spawn: ${err}`)
+			})
+
+			ruby_server.stdout!.on('data', (data: any) => {
 				// console.log(`stdout: ${data}`)
 				this.extDebugOutput.appendLine(`daemon.rb stdout: ${data}`)
 				// Start the keepalive loop
@@ -522,12 +538,13 @@ export class Main {
 
 				resolve() // Assume stuff is ok instantly....
 
-				//if (data.toString().match(/.*Sonic Pi Server successfully booted.*/)) { // TODO: Fix mixer setting stuff
-				//	this.updateMixerSettings()
-				//}
+				// if (data.toString().match(/.*Sonic Pi Server successfully booted.*/)) {
+				// TODO: Fix mixer setting stuff
+				// this.updateMixerSettings()
+				// }
 			})
 
-			ruby_server.stderr.on('data', (data: any) => {
+			ruby_server.stderr!.on('data', (data: any) => {
 				// console.log(`stdserr: ${data}`)
 				this.extDebugOutput.appendLine(`daemon.rb stderr: ${data}`)
 
