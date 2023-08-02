@@ -77,6 +77,10 @@ export function activate(context: vscode.ExtensionContext) {
 		void main.startServer()
 	})
 
+	disposable = vscode.commands.registerCommand('vscode-sonic-pi.checkInstall', () => {
+		if (main.checkSonicPiPath()) void vscode.window.showInformationMessage('All Good!')
+	})
+
 	disposable = vscode.commands.registerTextEditorCommand('vscode-sonic-pi.run', (textEditor) => {
 		let doc = textEditor.document
 		// If the focus is on something that is not ruby (i.e. something on the output pane),
@@ -155,6 +159,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 	disposable = vscode.commands.registerCommand('vscode-sonic-pi.stop', () => {
 		main.stopAllJobs()
+	})
+
+	disposable = vscode.commands.registerCommand('vscode-sonic-pi.stopServer', () => {
+		main.stopRubyServer()
 	})
 
 	disposable = vscode.commands.registerCommand('vscode-sonic-pi.togglerecording', () => {

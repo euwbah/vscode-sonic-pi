@@ -1,0 +1,22 @@
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+# This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message. # This tests whether big files can be sent over OSC message.
+
+use_synth :sine
+
+play 80, release: 4, amp: 1
