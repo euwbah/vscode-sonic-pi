@@ -68,7 +68,7 @@ export class Config {
 	}
 
 	/*
-		The following configs are useful when running Sonic Pi server on a separate networked/virtual machine.
+		The following configs are used when running Sonic Pi server on a separate networked/virtual machine.
 		_____________________________________________________________________________________________________
 	*/
 
@@ -77,31 +77,40 @@ export class Config {
 	 * @description This should default to the OS's default installation of /server/ruby/bin/daemon.rb
 	 * 				if not set.
 	 */
-	public daemonLauncherPath(): string | null {
-		return this.getConfiguration(this.section).remote.daemonLauncherPath
+	public daemonLauncherPath(): string | null | undefined {
+		return this.getConfiguration(this.section).get('remote.daemonLauncherPath')
 	}
 	/**
 	 * @returns overriden path to the ~/.sonic-pi directory stored in userhome which should contain user data.
 	 * @description This is the directory where logs can be found to read port numbers, etc.
 	 * 				This should default to ~/.sonic-pi otherwise (where ~/ is `os.homedir()`)
 	 */
-	public sonicPiUserPath(): string | null {
-		return this.getConfiguration(this.section).remote.sonicPiUserPath
+	public sonicPiUserPath(): string | null | undefined {
+		return this.getConfiguration(this.section).get('remote.sonicPiUserPath')
 	}
 	/**
-	 * @returns overriden ip address of the Sonic Pi server.
-	 * @description This should default to 127.0.0.1 if not set.
+	 * @returns overriden ip address of the Sonic Pi server in config
+	 * @description This defaults to 127.0.0.1 if not set.
 	 */
-	public serverHostIp(): string | null {
-		return this.getConfiguration(this.section).remote.serverHostIp
+	public serverHostIp(): string {
+		return this.getConfiguration(this.section).get('remote.serverHostIp', '127.0.0.1') || '127.0.0.1'
+	}
+
+	/**
+	 * @returns overriden path to Ruby interpreter executable.
+	 * @description If this is given, it should take precedence over return of {@link commandPath()}.
+	 */
+	public rubyPath(): string | null | undefined {
+		return this.getConfiguration(this.section).get('remote.rubyPath')
 	}
 
 	/*
-		The following configs are pertaining to ruby interpreter settings (ruby extension)
+		The following configs are pertaining to ruby interpreter settings (ruby extension),
+		which may not be installed
 		_________________________________________________________________________________
 	*/
 
-	public commandPath(): string {
-		return this.getConfiguration(this.rubySection).commandPath
+	public commandPath(): string | null | undefined {
+		return this.getConfiguration(this.rubySection).get('commandPath')
 	}
 }

@@ -265,15 +265,20 @@
 					"default": "rgba(255,255,255,1.0)",
 					"description": "Text flash color when running code"
 				},
-        "vscode-sonic-pi.remote.serverHostIp": {
-          "title": "Remote Server Host IP",
-          "type": "string",
-          "description": "Set IP address of the Sonic Pi server.\nUse when Sonic Pi server is running in a separate networked/virtual machine with its own IP."
-        },
         "vscode-sonic-pi.remote.daemonLauncherPath": {
           "title": "Remote path to `daemon.rb`",
           "type": "string",
-          "description": "Override default path to daemon.rb, relative to Sonic Pi root directory.\nOn windows, this defaults to '/app/server/ruby/bin/daemon.rb'. On Mac/Unix, /server/ruby/bin/daemon.rb.\nUse when Sonic Pi server is running in a virtual/networked machine with its own IP."
+          "description": "Override default path to daemon.rb, **relative to Sonic Pi installation directory**.\nOn windows, this defaults to '/app/server/ruby/bin/daemon.rb'. On Mac/Unix, /server/ruby/bin/daemon.rb.\nUse when Sonic Pi server is running an OS different from the current one."
+        },
+        "vscode-sonic-pi.remote.rubyPath": {
+          "title": "Remote path to ruby interpreter executable",
+          "type": "string",
+          "description": "Overrides default path to ruby interpreter executable. Use when Sonic Pi server is running in a separate networked/virtual machine. Use the remote installation of Ruby to run the remote Sonic Pi server."
+        },
+        "vscode-sonic-pi.remote.serverHostIp": {
+        "title": "Remote Server Host IP",
+          "type": "string",
+          "description": "Set IP address of the Sonic Pi server.\nUse when Sonic Pi server is running in a separate networked/virtual machine."
         },
         "vscode-sonic-pi.remote.sonicPiUserPath": {
           "title": "Remote path to `~/.sonic-pi` user folder",
