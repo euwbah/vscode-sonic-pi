@@ -23,8 +23,8 @@ import * as vscode from 'vscode'
 
 export class Config {
 	private getConfiguration = vscode.workspace.getConfiguration
-	private section: string = 'vscode-sonic-pi'
-	private rubySection: string = 'ruby.interpreter'
+	static section: string = 'vscode-sonic-pi'
+	static rubySection: string = 'ruby.interpreter'
 
 	// sonic-pi's config
 
@@ -33,38 +33,38 @@ export class Config {
 	 * @description This should default to the OS's default installation location of Sonic Pi if not set.
 	 */
 	public sonicPiRootDirectory(): string | null {
-		return this.getConfiguration(this.section).sonicPiRootDirectory
+		return this.getConfiguration(Config.section).sonicPiRootDirectory
 	}
 
 	public flashBackgroundColor(): string {
-		return this.getConfiguration(this.section).flashBackgroundColor
+		return this.getConfiguration(Config.section).flashBackgroundColor
 	}
 	public flashTextColor(): string {
-		return this.getConfiguration(this.section).flashTextColor
+		return this.getConfiguration(Config.section).flashTextColor
 	}
 	public launchSonicPiServerAutomatically(): string {
-		return this.getConfiguration(this.section).launchSonicPiServerAutomatically
+		return this.getConfiguration(Config.section).launchSonicPiServerAutomatically
 	}
 	public runFileWhenRunSelectedIsEmpty(): string {
-		return this.getConfiguration(this.section).runFileWhenRunSelectedIsEmpty
+		return this.getConfiguration(Config.section).runFileWhenRunSelectedIsEmpty
 	}
 	public launchSonicPiServerCustomExtension(): string {
-		return this.getConfiguration(this.section).launchSonicPiServerCustomExtension
+		return this.getConfiguration(Config.section).launchSonicPiServerCustomExtension
 	}
 	public invertStereo(): boolean {
-		return this.getConfiguration(this.section).invertStereo
+		return this.getConfiguration(Config.section).invertStereo
 	}
 	public forceMono(): boolean {
-		return this.getConfiguration(this.section).forceMono
+		return this.getConfiguration(Config.section).forceMono
 	}
 	public logClearOnRun(): boolean {
-		return this.getConfiguration(this.section).logClearOnRun
+		return this.getConfiguration(Config.section).logClearOnRun
 	}
 	public safeMode(): boolean {
-		return this.getConfiguration(this.section).safeMode
+		return this.getConfiguration(Config.section).safeMode
 	}
 	public updateRunFileWhenRunSelectedIsEmpty(value: string) {
-		void this.getConfiguration(this.section).update('runFileWhenRunSelectedIsEmpty', value, true)
+		void this.getConfiguration(Config.section).update('runFileWhenRunSelectedIsEmpty', value, true)
 	}
 
 	/*
@@ -78,7 +78,7 @@ export class Config {
 	 * 				if not set.
 	 */
 	public daemonLauncherPath(): string | null | undefined {
-		return this.getConfiguration(this.section).get('remote.daemonLauncherPath')
+		return this.getConfiguration(Config.section).get('remote.daemonLauncherPath')
 	}
 	/**
 	 * @returns overriden path to the ~/.sonic-pi directory stored in userhome which should contain user data.
@@ -86,14 +86,14 @@ export class Config {
 	 * 				This should default to ~/.sonic-pi otherwise (where ~/ is `os.homedir()`)
 	 */
 	public sonicPiUserPath(): string | null | undefined {
-		return this.getConfiguration(this.section).get('remote.sonicPiUserPath')
+		return this.getConfiguration(Config.section).get('remote.sonicPiUserPath')
 	}
 	/**
 	 * @returns overriden ip address of the Sonic Pi server in config
 	 * @description This defaults to 127.0.0.1 if not set.
 	 */
 	public serverHostIp(): string {
-		return this.getConfiguration(this.section).get('remote.serverHostIp', '127.0.0.1') || '127.0.0.1'
+		return this.getConfiguration(Config.section).get('remote.serverHostIp', '127.0.0.1') || '127.0.0.1'
 	}
 
 	/**
@@ -101,7 +101,7 @@ export class Config {
 	 * @description If this is given, it should take precedence over return of {@link commandPath()}.
 	 */
 	public rubyPath(): string | null | undefined {
-		return this.getConfiguration(this.section).get('remote.rubyPath')
+		return this.getConfiguration(Config.section).get('remote.rubyPath')
 	}
 
 	/*
@@ -111,6 +111,6 @@ export class Config {
 	*/
 
 	public commandPath(): string | null | undefined {
-		return this.getConfiguration(this.rubySection).get('commandPath')
+		return this.getConfiguration(Config.rubySection).get('commandPath')
 	}
 }
