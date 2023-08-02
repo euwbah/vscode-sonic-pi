@@ -114,8 +114,8 @@ export class Main {
 
 		this.rubyPath = this.config.rubyPath() || this.config.commandPath() || this.rubyPath
 
-		this.extDebugOutput.appendLine('Using Sonic Pi root directory: ' + this.rootPath)
-		this.extDebugOutput.appendLine('Using ruby: ' + this.rubyPath)
+		this.debugLog('Using Sonic Pi root directory: ' + this.rootPath)
+		this.debugLog('Using ruby: ' + this.rubyPath)
 
 		{
 			let relPath = this.config.daemonLauncherPath()
@@ -128,13 +128,13 @@ export class Main {
 				this.daemonLauncherPath = this.rootPath + '/server/ruby/bin/daemon.rb'
 			}
 		}
-		this.extDebugOutput.appendLine('Using daemon launcher: ' + this.daemonLauncherPath)
+		this.debugLog('Using daemon launcher: ' + this.daemonLauncherPath)
 
 		this.spUserPath = this.config.sonicPiUserPath() || os.homedir() + '/.sonic-pi'
 		this.daemonLogPath = this.spUserPath + '/log/daemon.log'
 
-		this.extDebugOutput.appendLine('Using user path: ' + this.spUserPath)
-		this.extDebugOutput.appendLine('Using daemon log path: ' + this.daemonLogPath)
+		this.debugLog('Using user path: ' + this.spUserPath)
+		this.debugLog('Using daemon log path: ' + this.daemonLogPath)
 
 		this.samplePath = this.rootPath + '/etc/samples'
 		this.spUserTmpPath = this.spUserPath + '/.writableTesterPath'
@@ -150,7 +150,9 @@ export class Main {
 
 		this.serverHostIp = this.config.serverHostIp()
 
-		this.extDebugOutput.appendLine(`Using server host ip: ${this.serverHostIp}`)
+		this.debugLog(`Using server host ip: ${this.serverHostIp}`)
+
+		this.sonicPiDaemonProcess = null
 
 		this.daemonPort = -1
 		this.guiSendToServerPort = -1
@@ -245,7 +247,7 @@ export class Main {
 		this.serverStarted = true
 
 		// Initialise the Sonic Pi server
-		this.extDebugOutput.appendLine('Going to start server (daemon.rb)')
+		this.debugLog('Going to start server (daemon.rb)')
 		this.logOutput.appendLine('Going to start server')
 
 		await this.startRubyServer() // Start server using daemon script... takes port from here
@@ -262,6 +264,10 @@ export class Main {
 
 	cueLog(str: string) {
 		this.cuesOutput.appendLine(str)
+	}
+
+	debugLog(str: string) {
+		this.extDebugOutput.appendLine(str)
 	}
 
 	// This is where the incoming OSC messages are processed.
@@ -432,7 +438,7 @@ export class Main {
 
 		// Discover the port numbers
 		let port_map = new Map<string, number>()
-		this.log('[GUI] - Discovering port numbers...')
+		this.debugLog('[GUI] - Discovering port numbers...')
 
 		// Read log file
 		const inputStream = fs.createReadStream(this.daemonLogPath)
@@ -497,28 +503,25 @@ export class Main {
 
 	// This is the main part of launching Sonic Pi's backend
 	async startRubyServer(): Promise<void> {
-		let args: ReadonlyArray<string> = ['--verbose', this.daemonLauncherPath] // No need for launch args on the new daemon script
+		let args: ReadonlyArray<string> = ['--verbose', `"${this.daemonLauncherPath}`] // No need for launch args on the new daemon script
 		let options: child_process.SpawnOptions = {
 			shell: true,
 		}
 
 		return new Promise<void>((resolve, reject) => {
-			let shellSafeRubyPath = this.rubyPath.trim().replace('~', '$HOME')
-			shellSafeRubyPath = `"${shellSafeRubyPath}"`
+			this.sonicPiDaemonProcess = child_process.spawn(`${this.rubyPath}`, args, options)
 
-			let ruby_server = child_process.spawn(shellSafeRubyPath, args, options)
-
-			ruby_server.on('close', (code) => {
-				this.extDebugOutput.appendLine(`child_process daemon.rb exited with code ${code}`)
+			this.sonicPiDaemonProcess.on('close', (code) => {
+				this.debugLog(`child_process daemon.rb exited with code ${code}`)
 			})
 
-			ruby_server.on('error', (err) => {
-				this.extDebugOutput.appendLine(`child_process daemon.rb couldn't spawn: ${err}`)
+			this.sonicPiDaemonProcess.on('error', (err) => {
+				this.debugLog(`child_process daemon.rb couldn't spawn: ${err}`)
 			})
 
-			ruby_server.stdout!.on('data', (data: any) => {
+			this.sonicPiDaemonProcess.stdout!.on('data', (data: any) => {
 				// console.log(`stdout: ${data}`)
-				this.extDebugOutput.appendLine(`daemon.rb stdout: ${data}`)
+				this.debugLog(`daemon.rb stdout: ${data}`)
 				// Start the keepalive loop
 				let ports = data.toString().split(' ')
 
@@ -530,11 +533,11 @@ export class Main {
 				this.guiUuid = parseInt(ports[7])
 				this.portsInitalizedResolver(new OscSender(this.serverSendToGuiPort, this.serverHostIp))
 
-				this.extDebugOutput.appendLine(`Using OSC/UDP ports:`)
-				this.extDebugOutput.appendLine(`  daemon: ${this.daemonPort}`)
-				this.extDebugOutput.appendLine(`  gui-listen-to-server: ${this.guiListenToServerPort}`)
-				this.extDebugOutput.appendLine(`  gui-send-to-server: ${this.serverSendToGuiPort}`)
-				this.extDebugOutput.appendLine(`  guiUuid: ${this.guiUuid}`)
+				this.debugLog(`Using OSC/UDP ports:`)
+				this.debugLog(`  daemon: ${this.daemonPort}`)
+				this.debugLog(`  gui-listen-to-server: ${this.guiListenToServerPort}`)
+				this.debugLog(`  gui-send-to-server: ${this.serverSendToGuiPort}`)
+				this.debugLog(`  guiUuid: ${this.guiUuid}`)
 
 				resolve() // Assume stuff is ok instantly....
 
@@ -544,9 +547,9 @@ export class Main {
 				// }
 			})
 
-			ruby_server.stderr!.on('data', (data: any) => {
+			this.sonicPiDaemonProcess.stderr!.on('data', (data: any) => {
 				// console.log(`stdserr: ${data}`)
-				this.extDebugOutput.appendLine(`daemon.rb stderr: ${data}`)
+				this.debugLog(`daemon.rb stderr: ${data}`)
 
 				if (`${data}`.indexOf('error') != -1) {
 					void vscode.window
@@ -559,6 +562,13 @@ export class Main {
 				}
 			})
 		})
+	}
+
+	stopRubyServer() {
+		if (this.sonicPiDaemonProcess && !this.sonicPiDaemonProcess.killed) {
+			this.sonicPiDaemonProcess.kill()
+			this.serverStarted = false
+		}
 	}
 
 	updateMixerSettings() {
@@ -577,8 +587,8 @@ export class Main {
 		}
 	}
 
-	sendOsc(message: OSC.Message) {
-		this.extDebugOutput.appendLine(`Going to send OSC: ${message.address} ${message.args}`)
+	sendOsc(message: _osc_type.Message) {
+		this.debugLog(`Going to send OSC: ${message.address} ${message.args}`)
 		void this.portsInitalized.then((sender) => {
 			sender.send(message)
 		})
